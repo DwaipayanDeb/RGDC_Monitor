@@ -1,0 +1,161 @@
+
+<html>
+<head>
+  <title>Rain Water TDS Data </title>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+
+</head>
+<body>
+  <h3> Studying the conductivity of rainwater is important for assessing its purity and understanding the presence of dissolved ions, which can indicate environmental pollution and affect water usability. TDS, or Total Dissolved Solids, measures the total concentration of dissolved substances in water and is usually expressed in ppm or mg/L. Electrical conductivity (EC), measured in microSiemens per centimeter (µS/cm), indicates how well water can conduct electricity due to the presence of ions. Siemens (S) is the SI unit of conductance, where 1 S = 1,000 mS = 1,000,000 µS. TDS and conductivity are closely linked, and in low-mineral water like rainwater, TDS (ppm) is often estimated as half the EC value, meaning EC (µS/cm) ≈ TDS × 2. This relationship helps determine the quality and usability of collected rainwater. </h3>
+  <h3>The TDS value of rainfall recorded since the inception of our monitoring station located at Ramanuj Gupta Degree College, Silchar (24.8333° N, 92.7789° E) can be downloaded for free from the below button</h3>
+  <h2>Download TDS Data</h2>
+  
+  <div style="display: flex; gap: 10px; margin-top: 20px;">
+    <button onclick="startDownloadFlow()" style="background-color: green; color: white;">Download CSV</button>
+  </div>
+
+<!-- Modal Dialog -->
+<!-- Stylish Dialog -->
+<div id="userModal" style="
+  display: none;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: linear-gradient(135deg, #e0f7fa, #ffffff);
+  padding: 25px 30px;
+  border-radius: 12px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+  font-family: 'Segoe UI', sans-serif;
+  z-index: 1000;
+  width: 350px;
+">
+
+  <h2 style="color: #00796B; margin-top: 0;">💾 Download Access</h2>
+  <p style="color: #333;">Please fill in your details to download the file:</p>
+
+  <label style="display:block; margin-bottom: 12px;">
+    <span style="display:block; font-weight:bold; margin-bottom: 4px;">Name</span>
+    <input type="text" id="userName" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:6px;">
+  </label>
+
+  <label style="display:block; margin-bottom: 12px;">
+    <span style="display:block; font-weight:bold; margin-bottom: 4px;">Institution</span>
+    <input type="text" id="userInstitution" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:6px;">
+  </label>
+
+  <label style="display:block; margin-bottom: 20px;">
+    <span style="display:block; font-weight:bold; margin-bottom: 4px;">Email</span>
+    <input type="email" id="userEmail" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:6px;">
+  </label>
+
+  <div style="text-align: right;">
+    <button onclick="submitUserInfo()" style="background-color: #00796B; color: white; padding: 8px 14px; border: none; border-radius: 6px; cursor: pointer; margin-right: 10px;">
+      Submit
+    </button>
+    <button onclick="closeUserDialog()" style="background-color: #e57373; color: white; padding: 8px 14px; border: none; border-radius: 6px; cursor: pointer;">
+      Cancel
+    </button>
+  </div>
+</div>
+
+  
+  
+
+  <script>
+    // TODO: Replace with your Firebase config
+const firebaseConfig = {
+  apiKey: "AI***************iJ4",
+  authDomain: "*********.firebaseapp.com",
+  databaseURL: "https://*******-default-rtdb.firebaseio.com",
+  projectId: "***********",
+  storageBucket: "***************.app",
+  messagingSenderId: "*********",
+  appId: "*************",
+  measurementId: "***********"
+};
+
+
+
+firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+
+  function startDownloadFlow() {
+    // First sign in anonymously
+    firebase.auth().signInAnonymously()
+      .then(() => {
+        console.log("Anonymous sign-in successful.");
+        showUserDialog();
+      })
+      .catch(error => {
+        console.error("Auth failed:", error);
+        alert("Failed to authenticate.");
+      });
+  }
+
+  function showUserDialog() {
+    document.getElementById('userModal').style.display = 'block';
+  }
+
+  function closeUserDialog() {
+    document.getElementById('userModal').style.display = 'none';
+  }
+
+  async function submitUserInfo() {
+    const name = document.getElementById('userName').value.trim();
+    const institution = document.getElementById('userInstitution').value.trim();
+    const email = document.getElementById('userEmail').value.trim();
+
+    if (!name || !institution || !email.includes('@')) {
+      alert("Please enter valid Name, Institution, and Email.");
+      return;
+    }
+
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+
+    try {
+      await db.ref(`/downloads/${timestamp}`).set({
+        name,
+        institution,
+        email,
+        downloadedAt: new Date().toISOString()
+      });
+
+      closeUserDialog();
+      downloadDataAsCSV(); // Start CSV download
+    } catch (error) {
+      console.error("Failed to write user data:", error);
+      alert("Error saving user info.");
+    }
+  }
+
+  async function downloadDataAsCSV() {
+    try {
+      const snapshot = await db.ref('/AtmosphericData/TDS_value').once('value');
+      const data = snapshot.val();
+
+      if (!data) {
+        alert('No data found!');
+        return;
+      }
+
+      let csv = 'Rain water TDS data\nLocation: Silchar-India (24.8333 deg. N 92.7789 w. E)\n\nYYYY-MM-DD_hh-mm-ss (UTC),Sensor Value (mV),Calculated TDS (ppm)\n';
+      for (let key in data) {
+        csv += `"${key}",${data[key]}\n`;
+      }
+
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'RainTDS_data.csv';
+      a.click();
+    } catch (error) {
+      console.error("CSV download failed:", error);
+      alert("Error downloading CSV.");
+    }
+  }
+  </script>
+</body>
+</html>
