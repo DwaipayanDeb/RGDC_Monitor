@@ -43,8 +43,6 @@ The project consists of:
 
 ## License
 This project is licensed under the **GNU GPL-3.0**.  
-It is **strictly for educational and research purposes**.  
-No commercial use without permission.
 
 ---
 
